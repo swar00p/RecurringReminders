@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.swaroop.recurringreminders.app-mergeDebugResources-31:/layout/item_reminder.xml",
+        "source": "com.swaroop.recurringreminders.app-main-34:/layout/item_reminder.xml"
+    },
+    {
+        "merged": "com.swaroop.recurringreminders.app-mergeDebugResources-31:/layout/activity_main.xml",
+        "source": "com.swaroop.recurringreminders.app-main-34:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.swaroop.recurringreminders.app-mergeDebugResources-31:/layout/activity_add_reminder.xml",
+        "source": "com.swaroop.recurringreminders.app-main-34:/layout/activity_add_reminder.xml"
+    }
+]
