@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements ReminderAdapter.L
         });
 
         requestNotificationPermission();
+        BootReceiver.scheduleDailyReschedule(this);
     }
 
     @Override
