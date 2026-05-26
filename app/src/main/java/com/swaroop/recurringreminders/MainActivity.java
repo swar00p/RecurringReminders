@@ -11,6 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import android.view.ViewGroup;
 
 import com.swaroop.recurringreminders.databinding.ActivityMainBinding;
 import com.swaroop.recurringreminders.models.Reminder;
@@ -29,6 +32,17 @@ public class MainActivity extends AppCompatActivity implements ReminderAdapter.L
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            int topInset = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
+            int bottomInset = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+            binding.appBarLayout.setPadding(0, topInset, 0, 0);
+            ViewGroup.MarginLayoutParams fabParams = 
+                (ViewGroup.MarginLayoutParams) binding.fab.getLayoutParams();
+            fabParams.bottomMargin = 24 + bottomInset;
+            binding.fab.setLayoutParams(fabParams);
+            return insets;
+        });
 
         repo = new ReminderRepository(this);
 

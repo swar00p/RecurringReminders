@@ -14,9 +14,19 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        release {
+            storeFile file('/Users/swarooprao/Documents/recurring-reminders.keystore')
+            storePassword 'Sach4in@'
+            keyAlias 'recurring-reminders'
+            keyPassword 'Sach4in@'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
