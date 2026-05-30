@@ -8,6 +8,8 @@ import android.net.Uri;
 import android.media.RingtoneManager;
 import android.media.AudioAttributes;
 import android.net.Uri;
+import android.content.Intent;
+import android.app.PendingIntent;
 
 import androidx.core.app.NotificationCompat;
 
@@ -63,6 +65,16 @@ public class NotificationHelper {
                 + "–" + reminder.getFormattedEndTime()
                 + " · " + reminder.getFormattedDays();
 
+        // Create intent to open MainActivity when notification is tapped
+        Intent launchIntent = new Intent(context, MainActivity.class);
+        launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent launchPendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                launchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
@@ -71,7 +83,8 @@ public class NotificationHelper {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setAutoCancel(true);
+                .setAutoCancel(true)
+                .setContentIntent(launchPendingIntent);
 
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         int notificationId = Math.abs(reminder.getId().hashCode());

@@ -8,6 +8,9 @@ import android.widget.Toast;
 import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import android.view.ViewGroup;
 
 import com.google.android.material.chip.Chip;
 import com.swaroop.recurringreminders.databinding.ActivityAddReminderBinding;
@@ -26,6 +29,8 @@ public class AddReminderActivity extends AppCompatActivity {
 
     private String selectedSoundUri = null;
     private String selectedSoundName = null;
+
+    private String editingReminderId = null;
 
     private static final String[] EMOJIS = {
             "💧", "🚶", "🧘", "📖", "💊", "🍎", "☕", "🌿", "🔔", "💪", "🎯", "🧠"
@@ -71,7 +76,28 @@ public class AddReminderActivity extends AppCompatActivity {
         binding = ActivityAddReminderBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            int topInset = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
+            int bottomInset = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+            binding.toolbar.setPadding(0, topInset, 0, 0);
+            binding.scrollView.setPadding(
+                binding.scrollView.getPaddingLeft(),
+                binding.scrollView.getPaddingTop(),
+                binding.scrollView.getPaddingRight(),
+                bottomInset
+            );
+            return insets;
+        });
+
         repo = new ReminderRepository(this);
+
+        editingReminderId = getIntent().getStringExtra("reminder_id");
+        if (editingReminderId != null) {
+            loadReminderForEditing(editingReminderId);
+            binding.btnSave.setText("Update");
+            // Update toolbar title
+            binding.toolbar.setTitle("Edit Reminder");
+        }
 
         setupToolbar();
         setupEmojiChips();
@@ -80,6 +106,74 @@ public class AddReminderActivity extends AppCompatActivity {
         setupTimeSpinners();
         setupSoundPicker();
         setupSaveButton();
+    }
+
+    private void loadReminderForEditing(String reminderId) {
+        Reminder reminder = repo.getById(reminderId);
+        if (reminder == null) return;
+
+        // Pre-populate label
+        binding.etLabel.setText(reminder.getLabel());
+
+        // Pre-select emoji
+        for (int i = 0; i < EMOJIS.length; i++) {
+            if (EMOJIS[i].equals(reminder.getEmoji())) {
+                selectedEmojiIndex = i;
+                updateChipGroup(binding.chipGroupEmoji, i);
+                break;
+            }
+        }
+
+        // Pre-select interval
+        for (int i = 0; i < INTERVAL_VALUES.length; i++) {
+            if (INTERVAL_VALUES[i] == reminder.getIntervalMinutes()) {
+                selectedIntervalIndex = i;
+                updateChipGroup(binding.chipGroupInterval, i);
+                break;
+            }
+        }
+
+        // Pre-select days
+        Arrays.fill(selectedDays, false);
+        for (int day : reminder.getActiveDays()) {
+            selectedDays[day] = true;
+        }
+        // Refresh day chips
+        for (int i = 0; i < binding.chipGroupDays.getChildCount(); i++) {
+            View child = binding.chipGroupDays.getChildAt(i);
+            if (child instanceof Chip) {
+                ((Chip) child).setChecked(selectedDays[i]);
+            }
+        }
+
+        // Pre-select start time
+        for (int i = 0; i < TIME_HOURS.length; i++) {
+            if (TIME_HOURS[i] == reminder.getStartHour()
+                    && TIME_MINUTES[i] == reminder.getStartMinute()) {
+                selectedStartIndex = i;
+                binding.spinnerStart.setValue(i);
+                break;
+            }
+        }
+
+        // Pre-select end time
+        for (int i = 0; i < TIME_HOURS.length; i++) {
+            if (TIME_HOURS[i] == reminder.getEndHour()
+                    && TIME_MINUTES[i] == reminder.getEndMinute()) {
+                selectedEndIndex = i;
+                binding.spinnerEnd.setValue(i);
+                break;
+            }
+        }
+
+        // Pre-select sound
+        if (reminder.getSoundUri() != null) {
+            selectedSoundUri = reminder.getSoundUri();
+            selectedSoundName = reminder.getSoundName();
+            binding.tvSoundName.setText(selectedSoundName);
+        }
+
+        updatePreview();
     }
 
     private void setupToolbar() {
@@ -199,6 +293,7 @@ public class AddReminderActivity extends AppCompatActivity {
     private void setupSaveButton() {
         updatePreview();
         binding.btnSave.setOnClickListener(v -> saveReminder());
+        binding.btnCancel.setOnClickListener(v -> finish());
     }
 
     private void saveReminder() {
@@ -223,7 +318,15 @@ public class AddReminderActivity extends AppCompatActivity {
             return;
         }
 
-        Reminder reminder = new Reminder();
+        Reminder reminder;
+        if (editingReminderId != null) {
+            // Load existing reminder to preserve id and createdAt
+            reminder = repo.getById(editingReminderId);
+            if (reminder == null) reminder = new Reminder();
+        } else {
+            reminder = new Reminder();
+        }
+
         reminder.setLabel(label);
         reminder.setEmoji(EMOJIS[selectedEmojiIndex]);
         reminder.setIntervalMinutes(INTERVAL_VALUES[selectedIntervalIndex]);
@@ -236,10 +339,15 @@ public class AddReminderActivity extends AppCompatActivity {
         reminder.setSoundName(selectedSoundName);
         reminder.setEnabled(true);
 
+        // Cancel old alarm before rescheduling
+        ReminderScheduler.cancel(this, reminder);
+        NotificationHelper.createChannelForReminder(this, reminder);
         repo.save(reminder);
         ReminderScheduler.scheduleNext(this, reminder);
 
-        Toast.makeText(this, "Reminder saved!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this,
+            editingReminderId != null ? "Reminder updated!" : "Reminder saved!",
+            Toast.LENGTH_SHORT).show();
         finish();
     }
 

@@ -18,6 +18,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
     public interface Listener {
         void onToggle(Reminder reminder, boolean enabled);
         void onDelete(Reminder reminder);
+        void onEdit(Reminder reminder);
     }
 
     private final List<Reminder> reminders;
@@ -92,6 +93,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
                     listener.onToggle(reminder, checked));
 
             itemView.setAlpha(reminder.isEnabled() ? 1f : 0.5f);
+            itemView.setOnClickListener(v -> listener.onEdit(reminder));
 
             btnDelete.setOnClickListener(v -> listener.onDelete(reminder));
         }

@@ -65,6 +65,13 @@ public class MainActivity extends AppCompatActivity implements ReminderAdapter.L
     }
 
     @Override
+    public void onEdit(Reminder reminder) {
+        Intent intent = new Intent(this, AddReminderActivity.class);
+        intent.putExtra("reminder_id", reminder.getId());
+        startActivity(intent);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         // Refresh list when returning from AddReminderActivity
