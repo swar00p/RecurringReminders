@@ -25,6 +25,12 @@ public class ReminderScheduler {
     public static void scheduleNext(Context context, Reminder reminder) {
         if (!reminder.isEnabled()) return;
 
+        // If stopped for today, schedule from tomorrow instead
+        if (StopForTodayManager.isStoppedForToday(context, reminder.getId())) {
+            scheduleNextFromTomorrow(context, reminder);
+            return;
+        }
+
         Calendar next = getNextOccurrence(reminder);
         if (next == null) {
             Log.w(TAG, "No next occurrence found for: " + reminder.getLabel());
@@ -33,17 +39,55 @@ public class ReminderScheduler {
 
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         PendingIntent pi = buildPendingIntent(context, reminder);
-
-        // setAlarmClock is the highest priority alarm type — same API used by
-        // the stock Clock app. Fires precisely even in Doze mode.
         AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(
-                next.getTimeInMillis(),
-                pi
-        );
+                next.getTimeInMillis(), pi);
         am.setAlarmClock(alarmClockInfo, pi);
-
         Log.d(TAG, "Scheduled next alarm for \"" + reminder.getLabel()
                 + "\" at " + next.getTime());
+    }
+
+    public static void scheduleNextFromTomorrow(Context context, Reminder reminder) {
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        tomorrow.set(Calendar.HOUR_OF_DAY, reminder.getStartHour());
+        tomorrow.set(Calendar.MINUTE, reminder.getStartMinute());
+        tomorrow.set(Calendar.SECOND, 0);
+        tomorrow.set(Calendar.MILLISECOND, 0);
+
+        // Find next valid occurrence starting from tomorrow
+        Calendar next = getNextOccurrenceFrom(reminder, tomorrow);
+        if (next == null) {
+            Log.w(TAG, "No next occurrence found from tomorrow for: " + reminder.getLabel());
+            return;
+        }
+
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        PendingIntent pi = buildPendingIntent(context, reminder);
+        AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(
+                next.getTimeInMillis(), pi);
+        am.setAlarmClock(alarmClockInfo, pi);
+        Log.d(TAG, "Scheduled next alarm from tomorrow for \"" + reminder.getLabel()
+                + "\" at " + next.getTime());
+    }
+
+    public static Calendar getNextOccurrenceFrom(Reminder reminder, Calendar from) {
+        List<Integer> activeDays = reminder.getActiveDays();
+        Calendar candidate = (Calendar) from.clone();
+
+        for (int day = 0; day < 7; day++) {
+            Calendar dayCandidate = (Calendar) candidate.clone();
+            dayCandidate.add(Calendar.DAY_OF_YEAR, day);
+
+            int dayOfWeek = dayCandidate.get(Calendar.DAY_OF_WEEK) - 1;
+            if (activeDays != null && !activeDays.isEmpty()
+                    && !activeDays.contains(dayOfWeek)) {
+                continue;
+            }
+
+            Calendar slot = buildSlotForDay(reminder, dayCandidate);
+            if (slot != null) return slot;
+        }
+        return null;
     }
 
     public static void cancel(Context context, Reminder reminder) {

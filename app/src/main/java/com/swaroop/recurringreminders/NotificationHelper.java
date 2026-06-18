@@ -55,8 +55,6 @@ public class NotificationHelper {
 
     public static void showNotification(Context context, Reminder reminder) {
         String channelId = "reminder_" + reminder.getId();
-
-        // Ensure channel exists
         createChannelForReminder(context, reminder);
 
         String title = reminder.getEmoji() + "  " + reminder.getLabel();
@@ -65,15 +63,32 @@ public class NotificationHelper {
                 + "–" + reminder.getFormattedEndTime()
                 + " · " + reminder.getFormattedDays();
 
-        // Create intent to open MainActivity when notification is tapped
+        int notificationId = Math.abs(reminder.getId().hashCode());
+
+        // Launch app intent
         Intent launchIntent = new Intent(context, MainActivity.class);
         launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent launchPendingIntent = PendingIntent.getActivity(
-                context,
-                0,
-                launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+                context, 0, launchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        // Stop for Today action
+        Intent stopIntent = new Intent(context, NotificationActionReceiver.class);
+        stopIntent.setAction(NotificationActionReceiver.ACTION_STOP_FOR_TODAY);
+        stopIntent.putExtra(NotificationActionReceiver.EXTRA_REMINDER_ID, reminder.getId());
+        stopIntent.putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
+        PendingIntent stopPendingIntent = PendingIntent.getBroadcast(
+                context, notificationId + 1, stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        // Dismiss action
+        Intent dismissIntent = new Intent(context, NotificationActionReceiver.class);
+        dismissIntent.setAction(NotificationActionReceiver.ACTION_DISMISS);
+        dismissIntent.putExtra(NotificationActionReceiver.EXTRA_REMINDER_ID, reminder.getId());
+        dismissIntent.putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId);
+        PendingIntent dismissPendingIntent = PendingIntent.getBroadcast(
+                context, notificationId + 2, dismissIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
@@ -84,9 +99,11 @@ public class NotificationHelper {
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
-                .setContentIntent(launchPendingIntent);
+                .setContentIntent(launchPendingIntent)
+                .addAction(0, "Stop for Today", stopPendingIntent)
+                .addAction(0, "Dismiss", dismissPendingIntent);
 
         NotificationManager nm = context.getSystemService(NotificationManager.class);
-        int notificationId = Math.abs(reminder.getId().hashCode());
-        nm.notify(notificationId, builder.build());}
+        nm.notify(notificationId, builder.build());
     }
+}
