@@ -258,8 +258,12 @@ public class AddReminderActivity extends AppCompatActivity {
     }
 
     private void setupSoundPicker() {
-        // Show system default initially
-        binding.tvSoundName.setText("Default notification sound");
+        // Show saved sound name if editing, otherwise show default
+        if (selectedSoundName != null) {
+            binding.tvSoundName.setText(selectedSoundName);
+        } else {
+            binding.tvSoundName.setText("Default notification sound");
+        }
 
         binding.btnPickSound.setOnClickListener(v -> {
             Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
