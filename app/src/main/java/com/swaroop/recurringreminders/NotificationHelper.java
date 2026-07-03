@@ -20,9 +20,15 @@ public class NotificationHelper {
     private static final String CHANNEL_ID = "recurring_reminders";
     private static final String CHANNEL_NAME = "Recurring Reminders";
 
+    public static String getChannelId(Reminder reminder) {
+        String soundSuffix = (reminder.getSoundUri() != null)
+                ? String.valueOf(reminder.getSoundUri().hashCode())
+                : "default";
+        return "reminder_" + reminder.getId() + "_" + soundSuffix;
+    }
 
     public static void createChannelForReminder(Context context, Reminder reminder) {
-        String channelId = "reminder_" + reminder.getId();
+        String channelId = "reminder_" + reminder.getChannelId();
         String channelName = reminder.getLabel();
 
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
@@ -54,7 +60,7 @@ public class NotificationHelper {
     }
 
     public static void showNotification(Context context, Reminder reminder) {
-        String channelId = "reminder_" + reminder.getId();
+        String channelId = "reminder_" + reminder.getChannelId();
         createChannelForReminder(context, reminder);
 
         String title = reminder.getEmoji() + "  " + reminder.getLabel();
