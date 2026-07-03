@@ -28,7 +28,7 @@ public class NotificationHelper {
     }
 
     public static void createChannelForReminder(Context context, Reminder reminder) {
-        String channelId = "reminder_" + reminder.getChannelId();
+        String channelId = getChannelId(reminder);
         String channelName = reminder.getLabel();
 
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
@@ -60,7 +60,7 @@ public class NotificationHelper {
     }
 
     public static void showNotification(Context context, Reminder reminder) {
-        String channelId = "reminder_" + reminder.getChannelId();
+        String channelId = getChannelId(reminder);
         createChannelForReminder(context, reminder);
 
         String title = reminder.getEmoji() + "  " + reminder.getLabel();
